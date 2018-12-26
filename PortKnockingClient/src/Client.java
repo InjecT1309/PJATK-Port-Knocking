@@ -3,10 +3,24 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Client extends Thread{
+public class Client extends Thread {
     InetAddress server_address;
     ArrayList<Integer> port_sequence;
     DatagramSocket socket;
+    TerminateAfterTimeout terminate;
+
+    private class TerminateAfterTimeout extends Thread {
+        @Override
+        public void run() {
+            try {
+                sleep(10000); //10 seconds
+                System.out.println("No response from the server");
+                System.exit(0);
+            } catch (InterruptedException e) {
+
+            }
+        }
+    }
 
     public Client() throws UnknownHostException, SocketException {
         server_address = InetAddress.getLocalHost();
@@ -25,11 +39,13 @@ public class Client extends Thread{
     @Override
     public void run() {
         try {
-            getIpAddress();
+            getServerIpAddress();
             getPortSequence();
             sendRequestsToPorts(port_sequence);
+            terminate = new TerminateAfterTimeout();
+            terminate.start();
             int server_port = listenForAnswer();
-            talkAboutWheather(server_port);
+            talkAboutWeather(server_port);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -37,7 +53,7 @@ public class Client extends Thread{
         }
     }
 
-    private void getIpAddress() throws UnknownHostException {
+    private void getServerIpAddress() throws UnknownHostException {
         System.out.println("Enter server ip address");
         String address = new Scanner(System.in).nextLine();
         server_address = InetAddress.getByName(address);
@@ -50,7 +66,7 @@ public class Client extends Thread{
             BufferedReader reader = new BufferedReader(new FileReader(file));
             ports = reader.readLine().split(" ");
         } catch (FileNotFoundException e) {
-            System.out.println("No port_sequence.txt file found.\nEnter the ports manually");
+            System.out.println("Enter the ports to knock");
             ports = new Scanner(System.in).nextLine().split(" ");
         } catch (IOException e) {
             e.printStackTrace();
@@ -85,16 +101,19 @@ public class Client extends Thread{
 
         return Integer.parseInt(answer);
     }
-    private void talkAboutWheather(int port) throws IOException {
+    private void talkAboutWeather(int port) throws IOException {
         Socket socket = new Socket(server_address, port);
         BufferedReader read = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         PrintWriter write = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
 
-        write.write("Nice whether, isn't it, server?\n");
+        System.out.println("Sending: " + "Nice whether, isn't it, server?");
+        write.println("Nice whether, isn't it, server?");
         write.flush();
 
         String answer = read.readLine();
         System.out.println("Received: " + answer);
         socket.close();
+
+        terminate.stop();
     }
 }

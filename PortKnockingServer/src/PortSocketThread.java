@@ -41,13 +41,14 @@ public class PortSocketThread extends Thread {
 
             System.out.println("Added " + socket.getLocalPort() + " to " + packet.getAddress());
             if(parent.clients_to_ports.get(packet_address).equals(parent.port_sequence)) {
-                int server_port = parent.openConnection();
-                respond(packet_address, Integer.toString(server_port));
+                int server_port = parent.openConnectionForClient(packet_address.getAddress());
+                sendOpenPort(packet_address, Integer.toString(server_port));
             }
         }
     }
 
-    private void respond(InetSocketAddress address, String message) {
+    private void sendOpenPort(InetSocketAddress address, String message) {
+        System.out.println("Sending: " + message);
         byte packet_content[] = message.getBytes();
         DatagramPacket packet = new DatagramPacket(packet_content, packet_content.length, address);
         try {

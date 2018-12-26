@@ -11,12 +11,13 @@ public class Server {
     Random rand;
     ArrayList<Integer> port_sequence;
     HashMap<InetSocketAddress, ArrayList<Integer>> clients_to_ports;
-    ServerSocket server_socket;
+    ArrayList<Integer> server_ports_taken;
 
     public Server() {
         rand = new Random();
         port_sequence = new ArrayList<>();
-        clients_to_ports = new HashMap<InetSocketAddress, ArrayList<Integer>>();
+        clients_to_ports = new HashMap<>();
+        server_ports_taken = new ArrayList<>();
 
         int port_sequence_length = 10 + (rand.nextInt(91)); // from 10 to 100
 
@@ -44,13 +45,17 @@ public class Server {
         }
     }
 
-    public int openConnection() throws IOException {
-        int port = 2025 + (rand.nextInt(1000));
-        System.out.println("Starting a tcp connection on port: " + port);
-        server_socket = new ServerSocket(port);
-        new ServerSocketThread(this, server_socket).start();
+    public int openConnectionForClient(InetAddress client_ip) throws IOException {
+        int port;
+        do {
+            port = 2025 + (rand.nextInt(1000));
+        } while(server_ports_taken.contains(port));
 
-        return server_socket.getLocalPort();
+        System.out.println("Starting a tcp connection on port: " + port);
+        new ServerSocketThread(this, port, client_ip).start();
+        server_ports_taken.add(port);
+
+        return port;
     }
 
     public static void main(String args[]) {
